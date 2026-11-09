@@ -15,11 +15,17 @@ pipeline {
         stage('Python Tests') {
             steps {
                 sh '''
-                    docker run --rm \
-                    -v "$WORKSPACE:/workspace" \
-                    -w /workspace \
-                    python:3.12-slim \
-                    python -m unittest discover -s tests -v
+                    python3 app/app.py > app.log 2>&1 &
+                    APP_PID=$!
+                    sleep 2
+
+                    set +e
+                    python3 -m unittest discover -s tests -v
+                    TEST_STATUS=$?
+                    set -e
+
+                    kill "$APP_PID" 2>/dev/null || true
+                    exit "$TEST_STATUS"
                 '''
             }
         }
